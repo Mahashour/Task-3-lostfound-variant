@@ -17,12 +17,28 @@ export default function ItemForm() {
   // TODO (edit mode): when there is an `id`, load the item and fill the form.
   useEffect(() => {
     if (!id) return
-    // TODO
+    async function loadItem() {
+      try {
+        const res = await api.get(`/items/${id}`)
+        const item = res.data.item || res.data
+        setForm({
+          title: item.title || '',
+          status: item.status || 'lost',
+          category: item.category || 'other',
+          location: item.location || '',
+          description: item.description || ''
+        })
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load item')
+      }
+    }
+    loadItem()
   }, [id])
 
   // TODO: update `form` when an input changes.
   function onChange(e) {
-    // TODO
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   }
 
   // TODO: POST a new item, or PATCH the existing one when editing,
@@ -30,7 +46,16 @@ export default function ItemForm() {
   async function onSubmit(e) {
     e.preventDefault()
     setError('')
-    // TODO
+    try {
+      if (id) {
+        await api.patch(`/items/${id}`, form)
+      } else {
+        await api.post('/items', form)
+      }
+      nav('/items')
+    } catch (err) {
+      setError(err.response?.data?.message || 'An unexpected error occurred')
+    }
   }
 
   return (
@@ -38,6 +63,61 @@ export default function ItemForm() {
       <h1 className="text-xl font-semibold mb-4">{id ? 'Edit' : 'Report'} Item</h1>
       <form onSubmit={onSubmit} className="space-y-3">
         {/* TODO: title input, status select, category select, location input and description textarea */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Title</label>
+          <input
+            type="text"
+            name="title"
+            value={form.title}
+            onChange={onChange}
+            className="input"
+            placeholder="e.g. Black backpack"
+            required
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Status</label>
+          <select name="status" value={form.status} onChange={onChange} className="input">
+            <option value="lost">Lost</option>
+            <option value="found">Found</option>
+            <option value="claimed">Claimed</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Category</label>
+          <select name="category" value={form.category} onChange={onChange} className="input">
+            <option value="electronics">Electronics</option>
+            <option value="clothing">Clothing</option>
+            <option value="documents">Documents</option>
+            <option value="accessories">Accessories</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Location (optional)</label>
+          <input
+            type="text"
+            name="location"
+            value={form.location}
+            onChange={onChange}
+            className="input"
+            placeholder="e.g. Library 2nd floor"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">Description (optional)</label>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={onChange}
+            className="input h-24"
+            placeholder="Provide more details..."
+          />
+        </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <button className="btn" type="submit">Save</button>
       </form>
